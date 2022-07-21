@@ -1,2 +1,3 @@
 # from .extension import *
-from .scripts import *
+from .extension import AlignWindowExtension
+# from .scripts import *
