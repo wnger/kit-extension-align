@@ -30,6 +30,14 @@ class ComboBoxModel(ui.AbstractItemModel):
             for text in self._values
         ]
 
+        # self.name_model.add_item_changed_fn(self._on_value_changed)
+
+    # def _on_value_changed(self, *args):
+    #     """Set revert_img to correct state."""
+    #     model = self.name_model
+    #     index = model.get_item_value_model().get_value_as_int()
+    #     print('Align index', index)
+
     def get_item_children(self, item):
         return self._items
 

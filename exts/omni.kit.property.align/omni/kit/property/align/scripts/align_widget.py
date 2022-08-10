@@ -7,7 +7,6 @@
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 #
 from ..widget import AARelationshipEditWidget
-from ..object_model import ObjectModel
 from typing import List
 from omni.kit.property.usd.usd_property_widget import UsdPropertiesWidget, UsdPropertyUiEntry
 from omni.kit.property.usd.usd_property_widget_builder import UsdPropertiesWidgetBuilder
@@ -25,12 +24,12 @@ import weakref
 
 
 
-REL_NAME = 'alignObject'
+REL_NAME = 'alignPrim'
 
 class AlignWidget(UsdPropertiesWidget):
     def __init__(self):
         super().__init__(title="Align", collapsed=False)
-        self._attribute_list = ["alignObject", "hovercraftWheels", "deafeningSilence", "randomOrder", "melancholyMerriment"]
+        self._attribute_list = [REL_NAME, "hovercraftWheels", "deafeningSilence", "randomOrder", "melancholyMerriment"]
 
     def on_new_payload(self, payload):
         """
@@ -58,18 +57,23 @@ class AlignWidget(UsdPropertiesWidget):
 
         # check is all selected prims are relevent class/types
         prims = []
-        # for prim_path in self._payload:
-        #     prim = self._get_prim(prim_path)
-        #     if not prim or not (prim.IsA(UsdGeom.Xform) or prim.IsA(UsdGeom.Mesh)):
-        #         return False
-        #                         # for prim_path in prim_paths:
-        #         #     print('myPrim', prim_path)
-        #         #     prim = self._get_prim(prim_path)
-        #         #     prim.CreateRelationship("alignPrim")
-        #         #     targets = prim.GetRelationship("alignPrim").GetTargets()
-        #         #     print('targets', targets)
-        #     prim.CreateRelationship(REL_NAME)
-            # prims.append(prim)
+        print('myPayload', self._payload)
+        for prim_path in self._payload:
+            prim = self._get_prim(prim_path)
+            
+            print('myPrim', prim, prim.GetTypeName(), prim.IsA(UsdGeom.Xform), prim.IsA(UsdGeom.Mesh))
+            if not prim:
+                return False
+            # if not prim or not (prim.IsA(UsdGeom.Xform) or prim.IsA(UsdGeom.Mesh)):
+            #     return False
+                                # for prim_path in prim_paths:
+                #     print('myPrim', prim_path)
+                #     prim = self._get_prim(prim_path)
+                #     prim.CreateRelationship("alignPrim")
+                #     targets = prim.GetRelationship("alignPrim").GetTargets()
+                #     print('targets', targets)
+            prim.CreateRelationship(REL_NAME)
+            prims.append(prim)
 
         # get list of attributes and build a dictonary to make logic simpler later
         self._placeholer_list = {}
@@ -138,8 +142,9 @@ class AlignWidget(UsdPropertiesWidget):
             additional_widget_kwargs={},
         ):
             def create_align_attr(weak_self):
+                return print('Align')
                 weak_self = weak_self()
-                self._placeholer_list["alignObject"] = True
+                self._placeholer_list[REL_NAME] = True
                 self._relationships = [stage.GetPrimAtPath(path).GetRelationship(REL_NAME) for path in prim_paths]
                 for relationship in self._relationships:
                     if relationship:
@@ -147,10 +152,6 @@ class AlignWidget(UsdPropertiesWidget):
                         if len(targets) > 0:
                             target = targets[0]
                             print('Target', target)
-                            # oM = ObjectModel(stage, target)
-                            # oM.set_position()
-                            # pos = stage.GetPrimAtPath(target)
-                            # print('Target prim', prim)
 
             print('prim_paths', prim_paths)
             with ui.VStack(height=0, spacing=HORIZONTAL_SPACING):
@@ -250,7 +251,7 @@ class AlignWidget(UsdPropertiesWidget):
             # "Create Melancholy Merriment" button and triple-float value together
             
             CustomLayoutProperty("melancholyMerriment", "Melancholy Merriment")
-            CustomLayoutProperty("alignObject", "Select Target", build_fn=mm_build_align_fn)
+            CustomLayoutProperty(REL_NAME, "Select Target", build_fn=mm_build_align_fn)
             CustomLayoutProperty("hovercraftWheels", "Hovercraft Wheels")
             CustomLayoutProperty("deafeningSilence", "Deafening Silence")
             # CustomLayoutProperty("randomOrder", "Random Order")

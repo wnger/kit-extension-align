@@ -45,9 +45,11 @@ class AARelationshipEditWidget:
 
     def _build(self):
         self.shared_targets = None
+        # mySelfRelationships [Usd.Prim(</World/CubeSource>).GetRelationship('alignPrim')]
         print('mySelfRelationships', self._relationships)
         for relationship in self._relationships:
             targets = relationship.GetTargets()
+            # Targets [Sdf.Path('/World/Cube1')]
             print('Targets', targets)
             if self.shared_targets is None:
                 self.shared_targets = targets
