@@ -8,6 +8,9 @@ description="The simplest python extension example. Use it as a starting point f
 
 # Path (relative to the root) or content of readme markdown file for UI.
 readme  = "docs/README.md"
+icon = "data/icon-align.png"
+
+preview_image = "data/preview-align2.png"
 
 # URL of the extension source repository.
 repository = ""

@@ -1,8 +1,5 @@
 __all__ = ["align_model_style"]
 
-from omni.ui import color as cl
-from omni.ui import constant as fl
-from omni.ui import url
 import omni.kit.app
 import omni.ui as ui
 import pathlib
@@ -12,11 +9,14 @@ EXTENSION_FOLDER_PATH = pathlib.Path(
 )
 
 ATTR_LABEL_WIDTH = 10
+VHEIGHT = 10
 
-url.checkbox_on_icon = f"{EXTENSION_FOLDER_PATH}/icons/checkbox_on.svg"
-url.checkbox_off_icon = f"{EXTENSION_FOLDER_PATH}/icons/checkbox_off.svg"
+align_model_style = {}
+for i in ['x', 'y', 'z']:
+    align_model_style["Image::checked-"+i.upper()] = {"image_url": f"{EXTENSION_FOLDER_PATH}/icons/checkbox_on_{i}.svg" }
+    align_model_style["Image::unchecked-"+i.upper()] = {"image_url": f"{EXTENSION_FOLDER_PATH}/icons/checkbox_off_{i}.svg"}
 
-align_model_style = {
-    "Image::checked": {"image_url": url.checkbox_on_icon},
-    "Image::unchecked": {"image_url": url.checkbox_off_icon},
+v_style = {
+    "margin_height": 1,
+    "margin_width": 2
 }

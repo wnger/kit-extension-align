@@ -72,7 +72,7 @@ class AlignWindowExtension(omni.ext.IExt):
             editor_menu.set_value(AlignWindowExtension.MENU_PATH, value)
 # 
     def _on_stage_event(self, event):
-        if event.type == int(omni.usd.StageEventType.SELECTION_CHANGED):
+        if event.type == int(omni.usd.StageEventType.SELECTION_CHANGED) and self._window.frame:
             print('Stage event', event.type)
             self._window.frame.rebuild()
 
@@ -113,9 +113,8 @@ class AlignWindowExtension(omni.ext.IExt):
             asyncio.ensure_future(self._destroy_window_async())
 
     def show_window(self, menu, value):
-        print('showWindow', menu, value)
         if value:
-            self._window = AlignWindow(AlignWindowExtension.WINDOW_NAME, width=300, height=300)
+            self._window = AlignWindow(AlignWindowExtension.WINDOW_NAME, width=300, height=200)
             self._window.set_visibility_changed_fn(self._visiblity_changed_fn)
         elif self._window:
             self._window.visible = False

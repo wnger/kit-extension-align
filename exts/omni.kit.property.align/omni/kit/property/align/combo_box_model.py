@@ -1,6 +1,5 @@
 __all__ = ["ComboBoxModel"]
 
-from typing import Optional
 import omni.ui as ui
 
 class ListItem(ui.AbstractItem):
@@ -8,7 +7,6 @@ class ListItem(ui.AbstractItem):
         super().__init__()
         self.name_model = ui.SimpleStringModel(text)
         
-
     def __repr__(self):
         return f'"{self.name_model.as_string}"'
 
@@ -30,14 +28,6 @@ class ComboBoxModel(ui.AbstractItemModel):
             for text in self._values
         ]
 
-        # self.name_model.add_item_changed_fn(self._on_value_changed)
-
-    # def _on_value_changed(self, *args):
-    #     """Set revert_img to correct state."""
-    #     model = self.name_model
-    #     index = model.get_item_value_model().get_value_as_int()
-    #     print('Align index', index)
-
     def get_item_children(self, item):
         return self._items
 
@@ -45,6 +35,3 @@ class ComboBoxModel(ui.AbstractItemModel):
         if item is None:
             return self._current_index
         return item.name_model
-
-# self._combo_box_model = ComboBoxModel()
-# ui.ComboBox(self._combo_box_model, style={"font_size": 22})

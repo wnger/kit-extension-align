@@ -2,8 +2,8 @@
 __all__ = ["AlignModel"]
 
 # from turtle import pos
-from types import new_class
 from typing import List
+import numpy as np
 import omni.usd
 import omni.kit.commands
 from pxr import Tf, Usd, UsdGeom, Sdf, Gf
@@ -19,30 +19,66 @@ class AlignModel:
         """Get the list of currently selected prims"""
         return omni.usd.get_context().get_selection().get_selected_prim_paths()
 
+    def get_size(self, prim):
+        rangeTarget = self.get_bound(prim)
+        bboxMinTarget = rangeTarget.GetMin()
+        bboxMaxTarget = rangeTarget.GetMax()
+
+        # Get size
+        targetH = bboxMaxTarget[1] - bboxMinTarget[1]
+        targetW = bboxMaxTarget[0] - bboxMinTarget[0]
+        targetD = bboxMaxTarget[2] - bboxMinTarget[2]
+
+        return np.array([targetW, targetH, targetD])
+
     def get_bound(self, prim):
         box_cache = UsdGeom.BBoxCache(Usd.TimeCode.Default(), includedPurposes=[UsdGeom.Tokens.default_])
         boundWorld = box_cache.ComputeWorldBound(prim)
         boundLocal = box_cache.ComputeLocalBound(prim)
+        # print('bound')
 
-        range = boundWorld.ComputeAlignedBox()
-
-        # print('boundWorld', boundWorld.ComputeAlignedBox())
-        # print('boundLocal', boundLocal.ComputeAlignedBox())
+        range = boundLocal.ComputeAlignedBox()
         return range
-        # print('Range', range)
-        bboxMin = range.GetMin()
-        bboxMax = range.GetMax()
 
-    def set_scale(self, primPath, oldScale, targetScale, transVal):
+    def set_scale(self, stage, primPath, oldScale, targetScale, targetPrim, transVal):
         print('Align scale', oldScale, targetScale, transVal)
+        sourcePrim = stage.GetPrimAtPath(primPath)
 
-        newScale = oldScale
+        sourceScale =np.array([oldScale[0], oldScale[1], oldScale[2]])
+        sourceSize = self.get_size(sourcePrim)
+        targetSize = self.get_size(targetPrim)
+        newScale = (targetSize/sourceSize)
+        
+
         if transVal[0] == True:
-            newScale[0] = targetScale[0]
+            diff = newScale[0]
         if transVal[1] == True:
-            newScale[1] = targetScale[1]
+            diff = newScale[1]
         if transVal[2] == True:
-            newScale[2] = targetScale[2]
+            diff = newScale[2]
+        
+        targetScale = sourceScale*diff
+        newScale = oldScale
+
+        # if transVal[0] == True:
+        #     newScale[0] = targetScale[0]
+        # if transVal[1] == True:
+        #     newScale[1] = targetScale[1]
+        # if transVal[2] == True:
+        #     newScale[2] = targetScale[2]
+
+        
+
+        newScale[0] = targetScale[0]
+        newScale[1] = targetScale[1]
+        newScale[2] = targetScale[2]
+
+        print('Source scale', sourceScale)
+        print('Source S', sourceSize)
+        print('Target S', targetSize)
+        print('Diff S', diff)
+        print('Target Scale', targetScale)
+        print('New Scale', newScale)
 
         omni.kit.commands.execute('TransformPrimSRT',
             path=Sdf.Path(primPath),
@@ -56,7 +92,7 @@ class AlignModel:
             old_scale=None)
 
     def set_rotate(self, primPath, oldRotate, targetRotate, transVal):
-        print('Align rotate', oldRotate, targetRotate)
+
         newRotate = oldRotate
         if transVal[0] == True:
             newRotate[0] = targetRotate[0]
@@ -81,37 +117,23 @@ class AlignModel:
         newPos = oldPos
         sourcePrim = stage.GetPrimAtPath(primPath)
 
-
-        # if targetPrim.HasProperty('xformOp:translate:pivot'):
-        #     targetPivot = self._set_pivot(targetPrim)
-        #     print('targetPivot', targetPivot)
-
         newX = oldPos[0]
         newY = oldPos[1]
         newZ = oldPos[2]
 
-
-
         print('Source path', primPath)
-        # range = self.get_bound(targetPrim)
-        # print(range.GetMin(), range.GetMax())
-
-
-
+   
         # Source prim stats
         rangeSource = self.get_bound(sourcePrim)
-        print('Source bound', rangeSource)
         bboxMinSource = rangeSource.GetMin()
         bboxMaxSource = rangeSource.GetMax()
-        print('sourceMin', bboxMinSource, 'sourceMax', bboxMaxSource)
 
         # Get size
         sourceH = bboxMaxSource[1] - bboxMinSource[1]
         sourceW = bboxMaxSource[0] - bboxMinSource[0]
         sourceD = bboxMaxSource[2] - bboxMinSource[2]
 
-        print('sourceH', sourceH, 'sourceW', sourceW, 'sourceD', sourceD)
-
+    
         # If source is too small, eg. Xform
         if sourceH < 0:
             sourceH = 0
@@ -120,27 +142,18 @@ class AlignModel:
         if sourceD < 0:
             sourceD = 0
 
-
-
+        print('sourceH', sourceH, 'sourceW', sourceW, 'sourceD', sourceD)
 
         rangeTarget = self.get_bound(targetPrim)
-        # print('Target bound', range)
-        bboxMinTarget = rangeTarget .GetMin()
-        bboxMaxTarget = rangeTarget .GetMax()
-        print('targetMin', bboxMinTarget, 'targetMax', bboxMaxTarget)
-        # print('boxMinTarget', bboxMin)
-        # print('boxMaxTarget', bboxMax)
-        # print('transVal', transVal, type(transVal))
-        # print('faceVal', faceVal)
+        bboxMinTarget = rangeTarget.GetMin()
+        bboxMaxTarget = rangeTarget.GetMax()
 
         # Get size
         targetH = bboxMaxTarget[1] - bboxMinTarget[1]
         targetW = bboxMaxTarget[0] - bboxMinTarget[0]
         targetD = bboxMaxTarget[2] - bboxMinTarget[2]
-        print('targetH', targetH, 'targetW', targetW, 'targetD', targetD)
 
         targetTransform = self._set_pivot(targetPrim)
-        print('targetTransform', targetTransform)
 
         # If target is too small
         if targetH < 0:
@@ -150,7 +163,13 @@ class AlignModel:
         if targetD < 0:
             targetD = 0
 
-        
+        # Target is group object, get the center
+        if targetPrim.HasProperty('xformOp:translate:pivot'):
+            bbMin = Gf.Vec3f(bboxMinTarget)
+            bbMax = Gf.Vec3f(bboxMaxTarget)
+            bbCenter = (bbMin + bbMax) * 0.5
+            targetPos = bbCenter
+
         if transVal[0] == True:
             newX = targetPos[0]
         if transVal[1] == True:
@@ -159,7 +178,8 @@ class AlignModel:
             newZ = targetPos[2]
 
 
-        # Target is Xform
+        # Calculate postion if facing is selected
+        # Target has no size, eg. Xform
         if targetH == 0 and targetW == 0 and targetD == 0:
             if faceVal == 1:
                 # Top
@@ -199,15 +219,26 @@ class AlignModel:
                 # Back
                 newZ = bboxMinTarget[2] - (sourceD*0.5)
 
-        print('TargetPos', [newX, newY, newZ])
+
+        # Calculcate transform for grouped objects
         if sourcePrim.HasProperty('xformOp:translate:pivot'):
             sourcePivotVal = sourcePrim.GetProperty('xformOp:translate:pivot').Get()
             newX -= sourcePivotVal[0]
             newY -= sourcePivotVal[1]
             newZ -= sourcePivotVal[2]
 
+        # Calculate origin
+        if sourceH > 0 or sourceW > 0 or sourceD > 0:
+            bbMin = Gf.Vec3f(bboxMinSource)
+            bbMax = Gf.Vec3f(bboxMaxSource)
+            bbCenter = (bbMin + bbMax) * 0.5
+            pivotPos = bbCenter - oldPos
+            newX -= pivotPos[0]
+            newY -= pivotPos[1]
+            newZ -= pivotPos[2]
+
         pos = [newX, newY, newZ]
-        print('newPos', pos)
+        # return
 
         omni.kit.commands.execute('TransformPrimSRT',
             path=Sdf.Path(primPath),
@@ -223,7 +254,6 @@ class AlignModel:
         return
 
     def _set_pivot(self, prim):
-        
         Xformable = UsdGeom.Xformable(prim)
         xform = UsdGeom.XformCommonAPI(Xformable)
         t = xform.GetXformVectors(Usd.TimeCode.Default())
@@ -231,7 +261,6 @@ class AlignModel:
         t[3][1] += t[0][1]
         t[3][2] += t[0][2]
         return t
-
 
     def set_align(self, tabVal, faceVal, transVal):
         """Returns position of currently selected object"""
@@ -258,6 +287,7 @@ class AlignModel:
 
             t = self._set_pivot(targetPrim)
             targetTransform = [t[2],t[1],t[3],t[3]]
+            # targetTransform = omni.usd.get_local_transform_SRT(targetPrim)
             print('TransPivot', t)
             print('TransSRT', omni.usd.get_local_transform_SRT(targetPrim))
 
@@ -266,8 +296,7 @@ class AlignModel:
                 sourcePrim = stage.GetPrimAtPath(prim)
                 t = self._set_pivot(sourcePrim)
                 oldTransform = [t[2],t[1],t[3],t[3]]
-                # print('sourcePrim', sourcePrim, oldTransform)
-                # print('targetPrim', targetTransform)
+
                 if tabVal == 'Transform':
                     oldPos = oldTransform[3]
                     targetPos = targetTransform[3]
@@ -275,7 +304,7 @@ class AlignModel:
                 elif tabVal == 'Scale':
                     oldScale = oldTransform[0]
                     targetScale = targetTransform[0]
-                    self.set_scale(prim, oldScale, targetScale, transVal)
+                    self.set_scale(stage, prim, oldScale, targetScale, targetPrim, transVal)
                 elif tabVal == 'Rotate':
                     oldRotate = oldTransform[1]
                     targetRotate = targetTransform[1]

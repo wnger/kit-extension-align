@@ -16,6 +16,21 @@ class CheckboxModel(ui.AbstractItemModel):
         self.__frame = ui.Frame()
         self.__default_val = default_value
         self.__bool_image = None
+        self.checkboxes = {
+            'X': None,
+            'Y': None,
+            'Z': None
+        }
+        # self.Y = None
+        # self.Z = None
+        print('Kwarfs', self.__attr_label, kwargs)
+        self._style = {}
+        
+        
+        if bool(kwargs):
+            self._style = kwargs['style']
+            self._tabVal = kwargs['tabVal']
+            
         with self.__frame:
             self._build_fn()
 
@@ -32,18 +47,36 @@ class CheckboxModel(ui.AbstractItemModel):
         """
         return getattr(self.__frame, attr)
 
+    def setCheckbox(self, checkboxes):
+        '''Turn on the model and turn off two checkboxes'''
+        for c in checkboxes:
+            self.checkboxes[c.__attr_label] = c
+
     def get_item_value_model(self):
         return self.__bool_image.checked
 
     def _on_value_changed(self):
+        print('Checkbox val change', self.__attr_label)
+        print('checked', self.__bool_image.checked)
         """Swap checkbox images and set revert_img to correct state."""
-        
+
+
+        if self._tabVal == 'Scale' and self.__bool_image.checked:
+            return
+
         self.__bool_image.checked = not self.__bool_image.checked
-        print('Checked', self.__attr_label, self.__bool_image.checked)
+        
+        name = "checked" if self.__bool_image.checked else "unchecked"
+        name += '-'+self.__attr_label
         self.__bool_image.name = (
-            "checked" if self.__bool_image.checked else "unchecked"
+            name
         )
-        # self.revert_img.enabled = self.__default_val != self.__bool_image.checked
+
+        if self._tabVal == 'Scale' and self.__bool_image.checked:
+            for c in self.checkboxes:
+                if c != self.__attr_label:
+                    self.checkboxes[c].__bool_image.checked = False
+                    self.checkboxes[c].__bool_image.name = 'unchecked-'+self.checkboxes[c].__attr_label
 
     def _build_head(self):
         """Build the left-most piece of the widget line (label in this case)"""
@@ -51,7 +84,8 @@ class CheckboxModel(ui.AbstractItemModel):
         ui.Label(
             self.__attr_label,
             name="attribute_name",
-            width=ATTR_LABEL_WIDTH
+            width=ATTR_LABEL_WIDTH,
+            style=self._style
         )
 
     def _build_body(self):
@@ -61,54 +95,21 @@ class CheckboxModel(ui.AbstractItemModel):
         """Main meat of the widget.  Draw the appropriate checkbox image, and
         set up callback.
         """
-        with ui.HStack(style={'alignment':ui.Alignment.RIGHT}):
-            
+        with ui.HStack(style={'alignment':ui.Alignment.RIGHT, 'margin_height': 0, 'margin_width': 1}):
+            name = "checked" if self.__default_val else "unchecked"
+            name += '-'+self.__attr_label
             self.__bool_image = ui.Image(
-                name="checked" if self.__default_val else "unchecked",
+                name = name,
                 fill_policy=ui.FillPolicy.PRESERVE_ASPECT_FIT,
-                height=16, width=16, checked=self.__default_val
+                height=20, width=20, checked=self.__default_val
             )
             ui.Spacer()
             
-            # with ui.VStack(style={'alignment':ui.Alignment.RIGHT}):
-            #     # Just shift the image down slightly (2 px) so it's aligned the way
-            #     # all the other rows are.
-            #     ui.Spacer(height=2)
-            #     self.__bool_image = ui.Image(
-            #         name="checked" if self.__default_val else "unchecked",
-            #         fill_policy=ui.FillPolicy.PRESERVE_ASPECT_FIT,
-            #         height=16, width=16, checked=self.__default_val
-            #     )
-            # # Let this spacer take up the rest of the Body space.
-            # ui.Spacer()
-
         self.__bool_image.set_mouse_pressed_fn(
             lambda x, y, b, m: self._on_value_changed())
-
-    def _build_tail(self):
-        """Build the right-most piece of the widget line. In this case,
-        we have a Revert Arrow button at the end of each widget line.
-        """
-        with ui.HStack(width=0):
-            ui.Spacer(width=5)
-            with ui.VStack(height=0):
-                ui.Spacer(height=3)
-                # self.revert_img = ui.Image(
-                #     name="revert_arrow",
-                #     fill_policy=ui.FillPolicy.PRESERVE_ASPECT_FIT,
-                #     width=12,
-                #     height=13,
-                #     enabled=False,
-                # )
-            ui.Spacer(width=5)
-
-        # call back for revert_img click, to restore the default value
-        # self.revert_img.set_mouse_pressed_fn(
-        #     lambda x, y, b, m: self._restore_default())
 
     def _build_fn(self):
         """Puts the 3 pieces together."""
         with ui.HStack(style={'alignment':ui.Alignment.RIGHT}):
             self._build_head()
             self._build_body()
-            # self._build_tail()
