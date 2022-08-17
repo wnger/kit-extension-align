@@ -1,7 +1,6 @@
 __all__ = ["align_model_style"]
 
 import omni.kit.app
-import omni.ui as ui
 import pathlib
 
 EXTENSION_FOLDER_PATH = pathlib.Path(

@@ -1,20 +1,16 @@
 __all__ = ["AlignWindow"]
 
-# from .widget import AARelationshipEditWidget
 from .align_model import AlignModel
-from typing import List
 import omni.ui as ui
 from .checkbox_model import CheckboxModel
 from .combo_box_model import ComboBoxModel
-from pxr import Usd, UsdShade, Sdf, Vt, Gf, UsdGeom, Trace
+from pxr import Usd
 
 import omni.usd
 import omni.kit.commands
 from functools import partial
-import weakref
-import pathlib
 
-from .style import align_model_style, v_style, EXTENSION_FOLDER_PATH, VHEIGHT
+from .style import align_model_style, v_style, EXTENSION_FOLDER_PATH
 
 DEFAULT_TAB = 'Transform'
 LABEL_WIDTH = 120
@@ -34,7 +30,6 @@ class AlignWindow(ui.Window):
         stage = self._get_context().get_stage()
         self._align_model = AlignModel(stage)
 
-        # self._combo_box_model.add_item_changed_fn(self._on_combo_value_changed)
         self._tabList = ['Transform', 'Rotate', 'Scale']
         self._tabVal = self._tabList[0]
 
@@ -118,16 +113,17 @@ class AlignWindow(ui.Window):
             with ui.HStack():
                 ui.Label(f"Align {self._tabVal}", width=self.label_width)
 
+                xVal = yVal = zVal = True
+
                 # Only check X axis if scale selected
-                xVal = True if self._tabVal == 'Scale' else True
-                yVal = False if self._tabVal == 'Scale' else True
-                zVal = False if self._tabVal == 'Scale' else True
+                if self._tabVal == 'Scale':
+                    yVal = zVal = False
 
                 self._checkboxX = CheckboxModel(label="X", default_value=xVal, tabVal=self._tabVal, style={"color": 0xFF6060AA})
                 self._checkboxY = CheckboxModel(label="Y", default_value=yVal, tabVal=self._tabVal, style={"color": 0xFF76A371})
                 self._checkboxZ = CheckboxModel(label="Z", default_value=zVal, tabVal=self._tabVal, style={"color": 0xFFA07D4F}) 
 
-                # Connect other checkboxes
+                # Connect other checkboxes to toggle check values
                 self._checkboxX.setCheckbox([self._checkboxY, self._checkboxZ])
                 self._checkboxY.setCheckbox([self._checkboxX, self._checkboxZ])
                 self._checkboxZ.setCheckbox([self._checkboxX, self._checkboxY])
@@ -143,7 +139,7 @@ class AlignWindow(ui.Window):
 
             # No axis selected
             if xVal == yVal == zVal == False:
-                return print('None selected')
+                return
             
             transVal = [xVal, yVal, zVal]
 
@@ -201,7 +197,6 @@ class AlignWindow(ui.Window):
         visible.
         """
         self._selectedPrims = self._get_prims()
-        print('Rebuild window')
         
         with ui.VStack(style=v_style, height=0):
 

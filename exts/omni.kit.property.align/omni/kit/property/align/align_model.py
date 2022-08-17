@@ -41,15 +41,14 @@ class AlignModel:
         return range
 
     def set_scale(self, stage, primPath, oldScale, targetScale, targetPrim, transVal):
-        print('Align scale', oldScale, targetScale, transVal)
-        sourcePrim = stage.GetPrimAtPath(primPath)
 
-        sourceScale =np.array([oldScale[0], oldScale[1], oldScale[2]])
+        sourcePrim = stage.GetPrimAtPath(primPath)
+        sourceScale = np.array([oldScale[0], oldScale[1], oldScale[2]])
         sourceSize = self.get_size(sourcePrim)
         targetSize = self.get_size(targetPrim)
         newScale = (targetSize/sourceSize)
         
-
+        # Constrain scaling to only 1 axis to maintain proportion
         if transVal[0] == True:
             diff = newScale[0]
         if transVal[1] == True:
@@ -57,17 +56,10 @@ class AlignModel:
         if transVal[2] == True:
             diff = newScale[2]
         
+        # Calculate amount to scale
         targetScale = sourceScale*diff
+
         newScale = oldScale
-
-        # if transVal[0] == True:
-        #     newScale[0] = targetScale[0]
-        # if transVal[1] == True:
-        #     newScale[1] = targetScale[1]
-        # if transVal[2] == True:
-        #     newScale[2] = targetScale[2]
-
-        
 
         newScale[0] = targetScale[0]
         newScale[1] = targetScale[1]
@@ -114,25 +106,33 @@ class AlignModel:
 
     def set_transform(self, stage, primPath, oldPos, targetPrim, targetPos, faceVal, transVal):
 
-        newPos = oldPos
+        newPos = targetPos
         sourcePrim = stage.GetPrimAtPath(primPath)
 
+        # Set new position to old position
         newX = oldPos[0]
         newY = oldPos[1]
         newZ = oldPos[2]
 
         print('Source path', primPath)
    
-        # Source prim stats
+        # Get source prim info
         rangeSource = self.get_bound(sourcePrim)
         bboxMinSource = rangeSource.GetMin()
         bboxMaxSource = rangeSource.GetMax()
+        bbMinSource = Gf.Vec3f(bboxMinSource)
+        bbMaxSource = Gf.Vec3f(bboxMaxSource)
 
-        # Get size
+        # Get center
+        bbCenterSource = (bbMinSource + bbMaxSource) * 0.5
+
+        # Get pivot offset if any
+        pivotPosSource = bbCenterSource - oldPos
+
+        # Get source size
         sourceH = bboxMaxSource[1] - bboxMinSource[1]
         sourceW = bboxMaxSource[0] - bboxMinSource[0]
         sourceD = bboxMaxSource[2] - bboxMinSource[2]
-
     
         # If source is too small, eg. Xform
         if sourceH < 0:
@@ -142,18 +142,15 @@ class AlignModel:
         if sourceD < 0:
             sourceD = 0
 
-        print('sourceH', sourceH, 'sourceW', sourceW, 'sourceD', sourceD)
-
+        # Get target prim info
         rangeTarget = self.get_bound(targetPrim)
         bboxMinTarget = rangeTarget.GetMin()
         bboxMaxTarget = rangeTarget.GetMax()
 
-        # Get size
+        # Get target size
         targetH = bboxMaxTarget[1] - bboxMinTarget[1]
         targetW = bboxMaxTarget[0] - bboxMinTarget[0]
         targetD = bboxMaxTarget[2] - bboxMinTarget[2]
-
-        targetTransform = self._set_pivot(targetPrim)
 
         # If target is too small
         if targetH < 0:
@@ -162,24 +159,26 @@ class AlignModel:
             targetW = 0
         if targetD < 0:
             targetD = 0
+        
+        # Set new position to target center if has size
+        if targetH > 0 or targetW > 0 or targetD > 0:
+            bbMinTarget = Gf.Vec3f(bboxMinTarget)
+            bbMaxTarget = Gf.Vec3f(bboxMaxTarget)
+            bbCenterTarget = (bbMinTarget + bbMaxTarget) * 0.5
+            newPos = bbCenterTarget
 
-        # Target is group object, get the center
-        if targetPrim.HasProperty('xformOp:translate:pivot'):
-            bbMin = Gf.Vec3f(bboxMinTarget)
-            bbMax = Gf.Vec3f(bboxMaxTarget)
-            bbCenter = (bbMin + bbMax) * 0.5
-            targetPos = bbCenter
 
+        print('newPos', newPos)
+        
+        # Set axis value
         if transVal[0] == True:
-            newX = targetPos[0]
+            newX = newPos[0]
         if transVal[1] == True:
-            newY = targetPos[1]
+            newY = newPos[1]
         if transVal[2] == True:
-            newZ = targetPos[2]
+            newZ = newPos[2]
 
-
-        # Calculate postion if facing is selected
-        # Target has no size, eg. Xform
+        # Target has no size
         if targetH == 0 and targetW == 0 and targetD == 0:
             if faceVal == 1:
                 # Top
@@ -199,6 +198,7 @@ class AlignModel:
             elif faceVal == 6:
                 # Back
                 newZ -= sourceD*0.5
+        # Target has size
         else:
             if faceVal == 1:
                 # Top
@@ -219,26 +219,20 @@ class AlignModel:
                 # Back
                 newZ = bboxMinTarget[2] - (sourceD*0.5)
 
-
-        # Calculcate transform for grouped objects
+        # Grouped objects automatically add pivot transform attribute, we have to add pivot values into transform
         if sourcePrim.HasProperty('xformOp:translate:pivot'):
             sourcePivotVal = sourcePrim.GetProperty('xformOp:translate:pivot').Get()
             newX -= sourcePivotVal[0]
             newY -= sourcePivotVal[1]
             newZ -= sourcePivotVal[2]
 
-        # Calculate origin
+        # Offset pivot values if any
         if sourceH > 0 or sourceW > 0 or sourceD > 0:
-            bbMin = Gf.Vec3f(bboxMinSource)
-            bbMax = Gf.Vec3f(bboxMaxSource)
-            bbCenter = (bbMin + bbMax) * 0.5
-            pivotPos = bbCenter - oldPos
-            newX -= pivotPos[0]
-            newY -= pivotPos[1]
-            newZ -= pivotPos[2]
+            newX -= pivotPosSource[0]
+            newY -= pivotPosSource[1]
+            newZ -= pivotPosSource[2]
 
         pos = [newX, newY, newZ]
-        # return
 
         omni.kit.commands.execute('TransformPrimSRT',
             path=Sdf.Path(primPath),
@@ -251,8 +245,6 @@ class AlignModel:
             old_rotation_order=None,
             old_scale=None)
 
-        return
-
     def _set_pivot(self, prim):
         Xformable = UsdGeom.Xformable(prim)
         xform = UsdGeom.XformCommonAPI(Xformable)
@@ -264,33 +256,20 @@ class AlignModel:
 
     def set_align(self, tabVal, faceVal, transVal):
         """Returns position of currently selected object"""
-        # print('Get position', self._prim_path)
-        print('SetAlignTrans', tabVal, transVal)
         stage = omni.usd.get_context().get_stage()
-        # if not stage or not self._current_path:
-        #     return [0, 0, 0]
-
-
 
         selectedPrims = omni.usd.get_context().get_selection().get_selected_prim_paths()
-        print('selectedPrims', selectedPrims, selectedPrims[-1])
 
-        if len(selectedPrims) == 1:
-            sourcePrim = stage.GetPrimAtPath(selectedPrims[0])
-            bound = self.get_bound(sourcePrim)
-            print('my bound', selectedPrims[0], bound)
-            return
+        # if len(selectedPrims) == 1:
+        #     sourcePrim = stage.GetPrimAtPath(selectedPrims[0])
+        #     return
 
         if len(selectedPrims) > 1:
             targetPrim = stage.GetPrimAtPath(selectedPrims[-1])
-            
-
             t = self._set_pivot(targetPrim)
             targetTransform = [t[2],t[1],t[3],t[3]]
-            # targetTransform = omni.usd.get_local_transform_SRT(targetPrim)
-            print('TransPivot', t)
-            print('TransSRT', omni.usd.get_local_transform_SRT(targetPrim))
 
+            # Start group commands
             omni.kit.undo.begin_group()
             for prim in selectedPrims[:-1]:
                 sourcePrim = stage.GetPrimAtPath(prim)
@@ -310,4 +289,5 @@ class AlignModel:
                     targetRotate = targetTransform[1]
                     self.set_rotate(prim, oldRotate, targetRotate, transVal)
 
+            # End group commands
             omni.kit.undo.end_group()

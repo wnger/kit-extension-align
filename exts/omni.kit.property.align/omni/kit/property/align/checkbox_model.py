@@ -16,14 +16,14 @@ class CheckboxModel(ui.AbstractItemModel):
         self.__frame = ui.Frame()
         self.__default_val = default_value
         self.__bool_image = None
+
+        # Store checkbox values
         self.checkboxes = {
             'X': None,
             'Y': None,
             'Z': None
         }
-        # self.Y = None
-        # self.Z = None
-        print('Kwarfs', self.__attr_label, kwargs)
+
         self._style = {}
         
         
@@ -56,11 +56,10 @@ class CheckboxModel(ui.AbstractItemModel):
         return self.__bool_image.checked
 
     def _on_value_changed(self):
-        print('Checkbox val change', self.__attr_label)
-        print('checked', self.__bool_image.checked)
+
         """Swap checkbox images and set revert_img to correct state."""
 
-
+        # Disable uncheck for Scale, simulate radio button behaviour
         if self._tabVal == 'Scale' and self.__bool_image.checked:
             return
 
@@ -72,6 +71,7 @@ class CheckboxModel(ui.AbstractItemModel):
             name
         )
 
+        # Toggle values for other checkboxes
         if self._tabVal == 'Scale' and self.__bool_image.checked:
             for c in self.checkboxes:
                 if c != self.__attr_label:
