@@ -10,10 +10,7 @@ from pxr import Tf, Usd, UsdGeom, Sdf, Gf
 
 class AlignModel:
     def __init__(self, stage):
-        print('myModelPrim', stage)
-        # super().__init__()
-        # self._target_path = target_path
-        # self._get_position()
+        super().__init__()
 
     def get_selection() -> List[str]:
         """Get the list of currently selected prims"""
@@ -33,9 +30,8 @@ class AlignModel:
 
     def get_bound(self, prim):
         box_cache = UsdGeom.BBoxCache(Usd.TimeCode.Default(), includedPurposes=[UsdGeom.Tokens.default_])
-        boundWorld = box_cache.ComputeWorldBound(prim)
+        # boundWorld = box_cache.ComputeWorldBound(prim)
         boundLocal = box_cache.ComputeLocalBound(prim)
-        # print('bound')
 
         range = boundLocal.ComputeAlignedBox()
         return range
@@ -65,12 +61,6 @@ class AlignModel:
         newScale[1] = targetScale[1]
         newScale[2] = targetScale[2]
 
-        print('Source scale', sourceScale)
-        print('Source S', sourceSize)
-        print('Target S', targetSize)
-        print('Diff S', diff)
-        print('Target Scale', targetScale)
-        print('New Scale', newScale)
 
         omni.kit.commands.execute('TransformPrimSRT',
             path=Sdf.Path(primPath),
@@ -113,8 +103,6 @@ class AlignModel:
         newX = oldPos[0]
         newY = oldPos[1]
         newZ = oldPos[2]
-
-        print('Source path', primPath)
    
         # Get source prim info
         rangeSource = self.get_bound(sourcePrim)
@@ -166,9 +154,6 @@ class AlignModel:
             bbMaxTarget = Gf.Vec3f(bboxMaxTarget)
             bbCenterTarget = (bbMinTarget + bbMaxTarget) * 0.5
             newPos = bbCenterTarget
-
-
-        print('newPos', newPos)
         
         # Set axis value
         if transVal[0] == True:
@@ -259,10 +244,6 @@ class AlignModel:
         stage = omni.usd.get_context().get_stage()
 
         selectedPrims = omni.usd.get_context().get_selection().get_selected_prim_paths()
-
-        # if len(selectedPrims) == 1:
-        #     sourcePrim = stage.GetPrimAtPath(selectedPrims[0])
-        #     return
 
         if len(selectedPrims) > 1:
             targetPrim = stage.GetPrimAtPath(selectedPrims[-1])
