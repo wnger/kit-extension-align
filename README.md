@@ -6,7 +6,8 @@ This tool allows you to align a single or multiple objects to match a target's p
 
 ## Usage
 1. Enable the align tool extension and you should see a window popup like below:
-![Align Tool Window](/exts/omni.kit.property.align/data/window.png)
+
+   ![Align Tool Window](/exts/omni.kit.property.align/data/window.png)
 2. Select the objects you wish to align. **The last item in your selection will be the target**.
 
 ## Things to note
