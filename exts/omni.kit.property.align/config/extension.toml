@@ -4,22 +4,22 @@ version = "1.0.0"
 
 # The title and description fields are primarily for displaying extension info in UI
 title = "Align Tool"
-description="The simplest python extension example. Use it as a starting point for your extensions."
+description="Quickly align objects"
 
 # Path (relative to the root) or content of readme markdown file for UI.
 readme  = "docs/README.md"
 icon = "data/icon-align.png"
 
-preview_image = "data/preview-align2.png"
+preview_image = "data/preview-align.png"
 
 # URL of the extension source repository.
 repository = ""
 
 # One of categories for UI.
-category = "Align"
+category = "Tool"
 
 # Keywords for the extension
-keywords = ["kit", "align"]
+keywords = ["tool", "align", "transform", "scale", "match", "rotate"]
 
 # Use omni.ui to build simple UI
 [dependencies]
