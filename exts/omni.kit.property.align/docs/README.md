@@ -13,7 +13,7 @@ This tool allows you to align a single or multiple objects to match a target's p
 ## Things to note
 - Only supports World position alignment.
 - Objects must be on the same level. You cannot align to a child or parent object.
-- For scaling, you can only scale to a single axis.
+- For scaling, you can only scale on a single axis.
 
 ## Adding This Extension
 To add this extension to your Omniverse app:

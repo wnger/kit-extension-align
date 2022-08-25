@@ -8,6 +8,7 @@ from pxr import Usd
 
 import omni.usd
 import omni.kit.commands
+import omni.kit.notification_manager as nm
 from functools import partial
 
 from .style import align_model_style, v_style, EXTENSION_FOLDER_PATH
@@ -107,7 +108,6 @@ class AlignWindow(ui.Window):
                 ui.Label("Align To Target", name="align-face", width=self.label_width)
                 ui.ComboBox(self._combo_box_model)
                 
-
     def _build_checkboxes(self):
         with ui.VStack(height=0, spacing=SPACING):
             with ui.HStack():
@@ -127,8 +127,7 @@ class AlignWindow(ui.Window):
                 self._checkboxX.setCheckbox([self._checkboxY, self._checkboxZ])
                 self._checkboxY.setCheckbox([self._checkboxX, self._checkboxZ])
                 self._checkboxZ.setCheckbox([self._checkboxX, self._checkboxY])
-
-                
+     
     def _build_button(self):
         
         def _align():
@@ -139,6 +138,9 @@ class AlignWindow(ui.Window):
 
             # No axis selected
             if xVal == yVal == zVal == False:
+                nm.post_notification(
+                "No axis selected", hide_after_timeout=True, duration=2,
+                status=nm.NotificationStatus.WARNING)
                 return
             
             transVal = [xVal, yVal, zVal]
@@ -153,7 +155,7 @@ class AlignWindow(ui.Window):
 
     def _validate_prims(self):
         if len(self._selectedPrims) < 2:
-            self._errorMsg = 'Not enough objects selected'
+            self._errorMsg = 'Not enough prims selected'
             return False
 
         # Get target prim, which is last selected item
@@ -170,22 +172,22 @@ class AlignWindow(ui.Window):
 
             # Ensure only transformable items are selected
             if prim.HasProperty('xformOp:translate') == False:
-                self._errorMsg = 'Invalid object(s) selected'
+                self._errorMsg = 'Invalid prim(s) selected'
                 return False
             
             # Ensure selected items are on the same hierarchy
             if prim in targetChildren:
-                self._errorMsg = 'Unable to align to parent object'
+                self._errorMsg = 'Unable to align to parent'
                 return False
 
             if targetParent:
                 if prim == targetParent:
-                    self._errorMsg = 'Unable to align to child object'
+                    self._errorMsg = 'Unable to align to child'
                     return False
 
                 primParent = prim.GetParent()
                 if primParent and primParent != targetParent:
-                    self._errorMsg = 'Selected objects are of different parent'
+                    self._errorMsg = 'Selected prims are of different parent'
                     return False
 
         return True
