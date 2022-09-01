@@ -30,4 +30,4 @@ keywords = ["tool", "align", "transform", "scale", "match", "rotate"]
 
 # Main python module this extension provides, it will be publicly available as "import omni.kit.property.align".
 [[python.module]]
-name = "omni.kit.property.align"
+name = "ov.tools.align"
